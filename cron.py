@@ -214,10 +214,15 @@ class CronDecorator(object):
         self.f(*self.args, **self.kwargs)
         self.call = self.schedule.clock.callLater(delay, self)
 
+def cron(**kwargs):
+    cs = CronSchedule(**kwargs)
+    def run(fxn):
+        cd = CronDecorator(fxn)
+        cd.start(cs)
+    return run
+
 if __name__=='__main__':
-    def test():
-        print "CALLED",datetime.datetime.now()
-    cs = CronSchedule(second='*/5')
-    cd = CronDecorator(test)
-    cd.start(cs)
+    @cron(second='*/3')
+    def test2():
+        print "HERE"*5
     reactor.run()
