@@ -1,7 +1,7 @@
 import unittest
 import cron
 
-class TestRegex(unittest.TestCase):
+class TestCronScheduleGeneration(unittest.TestCase):
     def setUp(self):
         self.seq = cron.CronSchedule._seq
         self.step = cron.CronSchedule._step
@@ -13,7 +13,10 @@ class TestRegex(unittest.TestCase):
          ('1-5,7,8',[1,2,3,4,5,7,8]),
         ]
         self.step_samples = [
-            ({'minute': '*/10'}, [0,10,20,30,40,50]),
+            (('minute', '*/10'), [0,10,20,30,40,50]),
+            (('hour', '*/4'), [0,4,8,12,16,20]),
+            (('day_of_week', '*/3'), [0,3,6]),
+            (('second', '*/50'), [0,50]),
         ]
         self.invalids = [
             '1.3,2.4',
@@ -33,17 +36,16 @@ class TestRegex(unittest.TestCase):
         for sample in self.seq_samples:
             self.assertEqual(cs._expand_sequence(sample[0]), sample[1])
 
-    def testPositiveEveryMatches(self):
-        match = self.step.match('*/5')
-        self.assertIsNotNone(match)
-        self.assertEqual(match.group(), '*/5')
-
-        match = self.step.match('*/55')
-        self.assertIsNotNone(match)
-        self.assertEqual(match.group(), '*/55')
+    def testPositiveStepMatches(self):
+        for sample in self.step_samples:
+            match = self.step.match(sample[0][1])
+            self.assertIsNotNone(match)
+            self.assertEqual(match.group(),sample[0][1])
 
     def testStepExpansion(self):
-        pass
+        cs = cron.CronSchedule(second='1')
+        for sample in self.step_samples:
+            self.assertEqual(cs._expand_step(sample[0][0],sample[0][1]), sample[1])
 
     def testInvalidChars(self):
         cs = cron.CronSchedule(second='1')
