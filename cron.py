@@ -41,7 +41,7 @@ class CronSchedule(object):
         if not cronstring: return []
         assert self._is_valid_chars(cronstring), "{0} contains invalid cron characters".format(cronstring)
         self._check_range(timeunit, cronstring)
-        return self._parse_cronstring(cronstring)
+        return self._parse_cronstring(timeunit, cronstring)
 
     def _is_int(self, s):
         try:
@@ -56,11 +56,21 @@ class CronSchedule(object):
         """
         return not len(self._invalidchars.findall(s))
 
-    def _parse_cronstring(self, cronstring):
+    def _parse_cronstring(self, timeunit, cronstring):
         if self._seq.match(cronstring):
             return self._expand_sequence(cronstring)
         elif self._step.match(cronstring):
-            return self._expand_step(cronstring)
+            return self._expand_step(timeunit, cronstring)
+
+    def _expand_step(self, timeunit, cronstring):
+        assert len(self._numbers.findall(cronstring)) == 1, \
+            'Cannot have more than one step declaration in a cronstring: {0}'.format(cronstring)
+        step = int(self._numbers.findall(cronstring)[0])
+        maxstep = max(self.TIMEUNITS[timeunit])
+        sequence = []
+        for mult in range((maxstep / step)+1):
+            sequence.append(mult * step)
+        return sequence
 
     def _expand_sequence(self, cronstring):
         """
