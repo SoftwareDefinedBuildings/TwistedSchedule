@@ -20,6 +20,7 @@ class CronSchedule(object):
     _step = re.compile(r'\*/\d+')
     _numbers = re.compile(r'\d+')
     _invalidchars = re.compile(r'[^0-9-*/,]')
+    clock = reactor
 
     def __init__(self, second=None, minute=None, hour=None, day_of_week=None):
         """
@@ -42,7 +43,7 @@ class CronSchedule(object):
         print "day_of_week",self._day_of_week
         if not (self._second or self._minute or self._hour or self._day_of_week):
             raise ValueError("CronSchedule must be instantiated with at least one timestep")
-        self.current = datetime.datetime.now()
+        self.current = datetime.datetime.now().replace(microsecond=0)
 
     def generate(self, timeunit, cronstring):
         if not cronstring: return None
@@ -83,7 +84,7 @@ class CronSchedule(object):
           unless we have the increment flag from above. If there is no minute schedule, then this
           is the next hour step. If there is no hour schedule, then this is 0.
         """
-        self.current = datetime.datetime.now()
+        self.current = datetime.datetime.now().replace(microsecond=0)
         nexttime = self.current
         increment_minute = False
         increment_hour = False
@@ -92,27 +93,29 @@ class CronSchedule(object):
         hour = self.current.hour
         print '-'*20
         if self._second:
-            print 'have second schedule'
+            #print 'have second schedule'
             second = self._get_closest(self.current.second, self._second)
-            print 'next scheduled second:',second
+            #print 'next scheduled second:',second
             next_second = self._get_closest(second, self._second)
-            print 'next next sched second:',next_second
+            #print 'next next sched second:',next_second
             if second == self._second[0]:
-                print 'increment minute!'
+                #print 'increment minute!'
                 increment_minute = True
 
         if self._minute:
-            print 'have minute schedule'
+            #print 'have minute schedule'
             if self._second:
                 minute = self.current.minute + 1*increment_minute
             else:
                 minute = self._get_closest(self.current.minute, self._minute)
-            print 'next sched min:', minute
+            #print 'next sched min:', minute
             next_minute = self._get_closest(minute, self._minute)
-            print 'next next sched min:',next_minute
+            #print 'next next sched min:',next_minute
             if minute == self._minute[0]:
-                print 'increment hour!'
+                #print 'increment hour!'
                 increment_hour = True
+        elif increment_minute:
+            minute = self.current.minute + 1
 
         if self._hour:
             if self._minute:
@@ -120,13 +123,15 @@ class CronSchedule(object):
             else:
                 hour = self._get_closest(self.current.hour, self._hour)
             next_hour = self._get_closest(hour, self._hour)
-            print 'hour',hour,next_hour
+            #print 'hour',hour,next_hour
             if hour == self._hour[0]:
                 increment_day = True
+        elif increment_hour:
+            hour = self.current.hour + 1
 
         print 'Current:',self.current
         nexttime = nexttime.replace(second=second, minute=minute, hour=hour, microsecond=0)
-        print "next call time:",nexttime
+        print "Next:",nexttime
         waittime = nexttime - self.current
         print 'Wait',waittime.seconds
         return waittime.seconds
@@ -189,18 +194,30 @@ class CronSchedule(object):
             if not int(digit) in valid_range:
                 raise ValueError("Range {0} is invalid for time unit {1}".format(cronstring, timeunit))
 
-
-    def next_calltime(self):
-        pass
-
 class CronDecorator(object):
-    def __init__(self, f):
+    def __init__(self, f, *args, **kwargs):
         self.f = f
+        self.args = args
+        self.kwargs = kwargs
+        self.run = False
+        self.deferred = defer.Deferred()
 
-    def __call__(self, *args):
-        self.f(*args)
+    def start(self, schedule):
+        self.schedule = schedule
+        delay = self.schedule.next()
+        self.schedule.clock.callLater(delay, self)
+        self.run = True
 
-
+    def __call__(self):
+        # called when delay expires
+        delay = self.schedule.next()
+        self.f(*self.args, **self.kwargs)
+        self.call = self.schedule.clock.callLater(delay, self)
 
 if __name__=='__main__':
-    cs = CronSchedule(second='1,3,5-10')
+    def test():
+        print "CALLED",datetime.datetime.now()
+    cs = CronSchedule(second='*/5')
+    cd = CronDecorator(test)
+    cd.start(cs)
+    reactor.run()
