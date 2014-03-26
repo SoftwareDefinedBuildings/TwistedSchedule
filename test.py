@@ -15,6 +15,12 @@ class TestRegex(unittest.TestCase):
         self.step_samples = [
             ({'minute': '*/10'}, [0,10,20,30,40,50]),
         ]
+        self.invalids = [
+            '1.3,2.4',
+            '*/5.5',
+            'asdsf',
+            '1,3,5.10',
+        ]
 
     def testPositiveSeqMatches(self):
         for sample in self.seq_samples:
@@ -38,6 +44,14 @@ class TestRegex(unittest.TestCase):
 
     def testStepExpansion(self):
         pass
+
+    def testInvalidChars(self):
+        cs = cron.CronSchedule(second='1')
+        for invalid in self.invalids:
+            self.assertFalse(cs._is_valid_chars(invalid))
+
+        for valid in self.seq_samples:
+            self.assertTrue(cs._is_valid_chars(valid[0]))
 
 if __name__ == '__main__':
     unittest.main()
