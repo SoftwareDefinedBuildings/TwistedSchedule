@@ -48,6 +48,24 @@ When you create a schedule, you specify the crontab string for each unit of time
 which takes care of determining the valid range of values across that
 particular unit of time: Hours are 0-23, minutes are 0-59, seconds are 0-59.
 
+## How to Install
+
+```
+git clone https://github.com/SoftwareDefinedBuildings/TwistedSchedule
+cd TwistedSchedule
+sudo python setup.py install
+```
+
 ## How to Use
 
-## How to Install
+```
+from twistedschedule.cron import cron
+
+@cron(hour='*/2')
+def run_every_two_hours():
+    print 'This runs at midnight, 2am, 4am, etc'
+
+@cron(minute='1-5')
+def run_first_5min():
+    print 'This runs the every minute for the first 5 minutes of every hour'
+```
