@@ -1,5 +1,5 @@
 import unittest
-import cron
+from twistedschedule import cron
 
 class TestCronScheduleGeneration(unittest.TestCase):
     def setUp(self):
