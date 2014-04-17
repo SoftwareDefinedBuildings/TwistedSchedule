@@ -91,7 +91,6 @@ class CronSchedule(object):
         second = 0
         minute = self.current.minute
         hour = self.current.hour
-        print '-'*20
         if self._second:
             #print 'have second schedule'
             second = self._get_closest(self.current.second, self._second)
@@ -129,11 +128,11 @@ class CronSchedule(object):
         elif increment_hour:
             hour = self.current.hour + 1
 
-        print 'Current:',self.current
+        #print 'Current:',self.current
         nexttime = nexttime.replace(second=second, minute=minute, hour=hour, microsecond=0)
-        print "Next:",nexttime
+        #print "Next:",nexttime
         waittime = nexttime - self.current
-        print 'Wait',waittime.seconds
+        #print 'Wait',waittime.seconds
         return waittime.seconds
 
     def _is_int(self, s):
